@@ -17,6 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
       button.classList.add('restart');
       button.textContent = 'Restart';
       game.start();
+      renderBoard(game.getState());
 
       document.addEventListener('keydown', (e) => {
         const keyName = e.key;
@@ -35,18 +36,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (keyName === 'ArrowRight') {
           game.moveRight();
+          renderBoard(game.getState());
         }
 
         if (keyName === 'ArrowLeft') {
           game.moveLeft();
+          renderBoard(game.getState());
         }
 
         if (keyName === 'ArrowUp') {
           game.moveUp();
+          renderBoard(game.getState());
         }
 
         if (keyName === 'ArrowDown') {
           game.moveDown();
+          renderBoard(game.getState());
         }
 
         gameScore.textContent = game.getScore();
@@ -74,8 +79,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loseMessage.classList.add('hidden');
       }
 
-      gameScore.textContent = '0';
+      gameScore.textContent = game.getScore();
       game.restart();
+      renderBoard(game.getState());
 
       if (button.classList.contains('start') && startMessage) {
         startMessage.classList.remove('hidden');
@@ -83,3 +89,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 });
+
+function renderBoard(state) {
+  const rows = document.querySelectorAll('.game-field tbody tr');
+
+  for (let i = 0; i < 4; i++) {
+    const cells = rows[i].querySelectorAll('td');
+
+    for (let j = 0; j < 4; j++) {
+      cells[j].textContent = state[i][j] === 0 ? '' : state[i][j];
+
+      cells[j].classList.forEach((cl) => {
+        if (cl.startsWith('field-cell--')) {
+          cells[j].classList.remove(cl);
+        }
+      });
+
+      if (state[i][j] !== 0) {
+        cells[j].classList.add(`field-cell--${state[i][j]}`);
+      }
+    }
+  }
+}

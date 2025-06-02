@@ -35,18 +35,23 @@ class Game {
   }
 
   moveLeft() {
+    if (this.getStatus() !== 'playing') {
+      return;
+    }
+
     const moved = this.processLeftMoveWithoutRendering();
 
     if (moved) {
       this.addRandomTile();
     }
-    this.#renderBoard(this.getState());
+
+    this.updateStatus();
   }
   processLeftMoveWithoutRendering() {
     let moved = false;
 
     for (let row = 0; row < 4; row++) {
-      const originalRow = this.board[row];
+      const originalRow = [...this.board[row]];
       const newRow = this.mergeRowByPriority(originalRow);
 
       if (!this.arraysEqual(originalRow, newRow)) {
@@ -58,37 +63,50 @@ class Game {
     return moved;
   }
   mergeRowByPriority(row) {
-    const result = [];
-    let skip = false;
-    const newRow = row.filter((val) => val !== 0);
+    let tiles = row.filter((val) => val !== 0);
 
-    for (let i = 0; i < newRow.length; i++) {
-      if (skip) {
-        skip = false;
-        continue;
-      }
-
-      if (i + 1 < newRow.length && newRow[i] === newRow[i + 1]) {
-        result.push(newRow[i] * 2);
-        this.score += newRow[i] * 2;
-        skip = true;
-      } else {
-        result.push(newRow[i]);
+    // Об’єднання однакових сусідніх клітинок
+    for (let i = 0; i < tiles.length - 1; i++) {
+      if (tiles[i] === tiles[i + 1]) {
+        tiles[i] *= 2;
+        this.score += tiles[i];
+        tiles[i + 1] = 0; // обнулити наступну
+        i++; // пропустити об'єднану клітинку
       }
     }
 
-    while (result.length < 4) {
-      result.push(0);
+    // Ще один зсув після об'єднання
+    tiles = tiles.filter((val) => val !== 0);
+
+    // Додати нулі до кінця
+    while (tiles.length < 4) {
+      tiles.push(0);
     }
 
-    return result;
+    return tiles.slice(0, 4);
   }
   moveRight() {
+    if (this.getStatus() !== 'playing') {
+      return;
+    }
+
     this.reverseRows();
-    this.moveLeft();
+
+    const moved = this.processLeftMoveWithoutRendering();
+
     this.reverseRows();
+
+    if (moved) {
+      this.addRandomTile();
+    }
+
+    this.updateStatus();
   }
   moveUp() {
+    if (this.getStatus() !== 'playing') {
+      return;
+    }
+
     this.board = this.transpose(this.board);
 
     const moved = this.processLeftMoveWithoutRendering();
@@ -98,9 +116,14 @@ class Game {
     if (moved) {
       this.addRandomTile();
     }
-    this.#renderBoard(this.getState());
+
+    this.updateStatus();
   }
   moveDown() {
+    if (this.getStatus() !== 'playing') {
+      return;
+    }
+
     this.board = this.transpose(this.board);
     this.reverseRows();
 
@@ -112,7 +135,8 @@ class Game {
     if (moved) {
       this.addRandomTile();
     }
-    this.#renderBoard(this.getState());
+
+    this.updateStatus();
   }
 
   /**
@@ -140,35 +164,33 @@ class Game {
    * `lose` - the game is lost
    */
   getStatus() {
-    const button = document.querySelector('.button');
+    return this.status;
+  }
 
-    if (button.classList.contains('restart')) {
-      this.status = 'playing';
-    }
-
+  updateStatus() {
     for (let row = 0; row < 4; row++) {
       for (let col = 0; col < 4; col++) {
         if (this.board[row][col] === 2048) {
           this.status = 'win';
 
-          return this.status;
+          return;
         }
       }
     }
 
-    const canMove = this.canMakeMove();
-
-    if (!canMove) {
+    if (this.canMakeMove()) {
+      this.status = 'playing';
+    } else {
       this.status = 'lose';
     }
-
-    return this.status;
   }
 
   /**
    * Starts the game.
    */
   start() {
+    this.status = 'playing';
+
     const getRandomPosition = () => {
       const row = Math.floor(Math.random() * 4);
       const col = Math.floor(Math.random() * 4);
@@ -191,7 +213,7 @@ class Game {
     } while (row2 === row1 && col2 === col1);
 
     this.board[row2][col2] = 2;
-    this.#renderBoard(this.getState());
+    this.updateStatus();
   }
 
   /**
@@ -204,7 +226,9 @@ class Game {
       }
     }
 
-    this.#renderBoard(this.getState());
+    this.status = 'idle';
+
+    this.score = 0;
   }
 
   addRandomTile() {
@@ -261,28 +285,6 @@ class Game {
 
   arraysEqual(a, b) {
     return a.length === b.length && a.every((val, i) => val === b[i]);
-  }
-
-  #renderBoard(state) {
-    const rows = document.querySelectorAll('.game-field tbody tr');
-
-    for (let i = 0; i < 4; i++) {
-      const cells = rows[i].querySelectorAll('td');
-
-      for (let j = 0; j < 4; j++) {
-        cells[j].textContent = state[i][j] === 0 ? '' : state[i][j];
-
-        cells[j].classList.forEach((cl) => {
-          if (cl.startsWith('field-cell--')) {
-            cells[j].classList.remove(cl);
-          }
-        });
-
-        if (state[i][j] !== 0) {
-          cells[j].classList.add(`field-cell--${state[i][j]}`);
-        }
-      }
-    }
   }
 }
 
