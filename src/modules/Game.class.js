@@ -65,20 +65,17 @@ class Game {
   mergeRowByPriority(row) {
     let tiles = row.filter((val) => val !== 0);
 
-    // Об’єднання однакових сусідніх клітинок
     for (let i = 0; i < tiles.length - 1; i++) {
       if (tiles[i] === tiles[i + 1]) {
         tiles[i] *= 2;
         this.score += tiles[i];
-        tiles[i + 1] = 0; // обнулити наступну
-        i++; // пропустити об'єднану клітинку
+        tiles[i + 1] = 0;
+        i++;
       }
     }
 
-    // Ще один зсув після об'єднання
     tiles = tiles.filter((val) => val !== 0);
 
-    // Додати нулі до кінця
     while (tiles.length < 4) {
       tiles.push(0);
     }
